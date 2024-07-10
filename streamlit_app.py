@@ -1,151 +1,110 @@
 import streamlit as st
 import pandas as pd
-import math
-from pathlib import Path
+import json
+from datetime import datetime
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
-)
+# 최적화된 데이터 구조
+data = """
+{
+    "human-catalepsy": {"value": 0, "label": "catalepsy"},
+    "human-impulsiveness": {"value": 2, "label": "impulsiveness"},
+    "human-grandiosity": {"value": 0, "label": "grandiosity"},
+    "human-jealousy_(infidelity)_delusion": {"value": 0, "label": "jealousy_(infidelity)_delusion"},
+    "human-thought_broadcasting": {"value": 2, "label": "thought_broadcasting"},
+    "human-dissociation": {"value": 0, "label": "dissociation"},
+    "human-stereotypy": {"value": 0, "label": "stereotypy"},
+    "human-soliloquy": {"value": 0, "label": "soliloquy"},
+    "human-dissociative_amnesia": {"value": 0, "label": "dissociative_amnesia"},
+    "human-nightmare": {"value": 0, "label": "nightmare"},
+    "human-lack_of_motivation": {"value": 1, "label": "lack_of_motivation"},
+    "human-religious_delusion": {"value": 0, "label": "religious_delusion"},
+    "human-compulsion": {"value": 0, "label": "compulsion"},
+    "human-thought_insertion": {"value": 1, "label": "thought_insertion"},
+    "human-circumstantiality": {"value": 1, "label": "circumstantiality"},
+    "human-binge_eating": {"value": 0, "label": "binge_eating"},
+    "human-chronic_fatigue": {"value": 0, "label": "chronic_fatigue"},
+    "human-visual_hallucination": {"value": 2, "label": "visual_hallucination"},
+    "human-panic_like_symptom": {"value": 0, "label": "panic_like_symptom"},
+    "human-feeling_of_inappropriate_or_excessive_guilt": {"value": 2, "label": "feeling_of_inappropriate_or_excessive_guilt"},
+    "human-somatic_delution": {"value": 0, "label": "somatic_delution"},
+    "human-worry": {"value": 0, "label": "worry"},
+    "human-memory_decline": {"value": 0, "label": "memory_decline"},
+    "human-loss_of_pleasure_(anhedonia)": {"value": 1, "label": "loss_of_pleasure_(anhedonia)"},
+    "human-elevated_mood": {"value": 1, "label": "elevated_mood"},
+    "human-diminished_emotional_expression_(apathy)": {"value": 0, "label": "diminished_emotional_expression_(apathy)"},
+    "human-running_commentary_hallucination": {"value": 0, "label": "running_commentary_hallucination"},
+    "human-bulimia": {"value": 0, "label": "bulimia"},
+    "human-diminished_interest": {"value": 2, "label": "diminished_interest"},
+    "human-odd_or_illogical_thinking": {"value": 1, "label": "odd_or_illogical_thinking"},
+    "human-mutism": {"value": 0, "label": "mutism"},
+    "human-auditory_hallucination": {"value": 1, "label": "auditory_hallucination"},
+    "human-decreased_need_for_sleep": {"value": 2, "label": "decreased_need_for_sleep"},
+    "human-increased_appetite": {"value": 0, "label": "increased_appetite"},
+    "human-hypochondriasis": {"value": 0, "label": "hypochondriasis"},
+    "human-decreased_appetite": {"value": 0, "label": "decreased_appetite"},
+    "human-depersonalization": {"value": 1, "label": "depersonalization"},
+    "human-reckless_(dangerous)_behavior": {"value": 1, "label": "reckless_(dangerous)_behavior"},
+    "human-grandiose_delusion": {"value": 0, "label": "grandiose_delusion"},
+    "human-weight_loss": {"value": 0, "label": "weight_loss"},
+    "human-feeling_of_worthlessness": {"value": 1, "label": "feeling_of_worthlessness"},
+    "human-thought_withdrawal": {"value": 1, "label": "thought_withdrawal"},
+    "human-tactile_hallucination": {"value": 1, "label": "tactile_hallucination"},
+    "human-delusion_of_being_controlled": {"value": 1, "label": "delusion_of_being_controlled"},
+    "human-commanding_voice": {"value": 0, "label": "commanding_voice"},
+    "human-suicidal_idea": {"value": 0, "label": "suicidal_idea"},
+    "human-idea_of_reference": {"value": 1, "label": "idea_of_reference"},
+    "human-psychomotor_agitation": {"value": 2, "label": "psychomotor_agitation"},
+    "human-olfactory_hallucination": {"value": 1, "label": "olfactory_hallucination"},
+    "human-derealization": {"value": 2, "label": "derealization"},
+    "human-flight_of_ideas": {"value": 2, "label": "flight_of_ideas"},
+    "human-headache": {"value": 0, "label": "headache"},
+    "human-loosening_of_association": {"value": 1, "label": "loosening_of_association"},
+    "human-concentration_difficulty": {"value": 0, "label": "concentration_difficulty"},
+    "human-obsession": {"value": 0, "label": "obsession"},
+    "human-stupor": {"value": 0, "label": "stupor"},
+    "human-restlessness": {"value": 0, "label": "restlessness"},
+    "human-negativism": {"value": 0, "label": "negativism"},
+    "human-anorexia": {"value": 0, "label": "anorexia"},
+    "human-paranoid_delusion": {"value": 3, "label": "paranoid_delusion"},
+    "human-increase_in_goal-directed_activity": {"value": 1, "label": "increase_in_goal-directed_activity"},
+    "human-irritable_mood": {"value": 1, "label": "irritable_mood"},
+    "human-weight_gain": {"value": 0, "label": "weight_gain"},
+    "human-tangentiality": {"value": 1, "label": "tangentiality"},
+    "human-suicidal_attempt": {"value": 0, "label": "suicidal_attempt"},
+    "human-insomnia": {"value": 2, "label": "insomnia"},
+    "human-erotic_delusion": {"value": 0, "label": "erotic_delusion"},
+    "human-nihilistic_delusion": {"value": 0, "label": "nihilistic_delusion"},
+    "human-anxiety": {"value": 0, "label": "anxiety"},
+    "human-gustatory_hallucination": {"value": 0, "label": "gustatory_hallucination"},
+    "human-hypersomnia": {"value": 0, "label": "hypersomnia"},
+    "human-depressed_mood": {"value": 1, "label": "depressed_mood"},
+    "human-nonsuicidal_injury": {"value": 0, "label": "nonsuicidal_injury"}
+}
+"""
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+@st.cache
+def load_data(data):
+    return json.loads(data)
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+data_dict = load_data(data)
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+# 데이터프레임 생성
+df = pd.DataFrame(data_dict).T
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+# 데이터 출력
+st.title('Human Symptoms Analysis')
+st.dataframe(df)
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+# 데이터 요약
+st.write('## Data Summary')
+st.write(df.describe())
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
+# 특정 데이터 필터링 및 시각화
+symptom = st.selectbox('Select Symptom', df['label'].unique())
+filtered_data = df[df['label'] == symptom]
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
+st.write(f"### Data for {symptom}")
+st.write(filtered_data)
 
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
-# Draw the actual page
-
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[gdp_df['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[gdp_df['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+# 바 차트 시각화
+st.bar_chart(filtered_data['value'])
