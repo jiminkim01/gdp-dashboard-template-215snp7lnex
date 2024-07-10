@@ -102,11 +102,6 @@ filtered_data = df[df['label'] == symptom]
 st.write(f"### Data for {symptom}")
 st.write(filtered_data)
 
-# 바 차트 시각화
-st.bar_chart사이트의 페이지 소스는 Streamlit 앱의 실제 Python 코드가 포함되어 있지 않으며, HTML 템플릿과 JavaScript 로드 스크립트만 포함되어 있습니다. 실제 애플리케이션 코드 분석이 필요하다면, 해당 사이트의 GitHub 저장소를 확인하는 것이 좋습니다. 
-
-Streamlit 앱의 일반적인 코드 예시를 제공하겠습니다. 이를 바탕으로 앱을 구성하고, GitHub에 업로드한 후 Streamlit Cloud에 배포할 수 있습니다.
-
 ### 예시 코드
 
 #### app.py
